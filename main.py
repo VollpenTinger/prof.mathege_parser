@@ -34,13 +34,12 @@ def download_images(url, download_folder='images'):
         # full path for save
         filepath = os.path.join(download_folder, filename + '.jpg')
         counter +=1
-        if counter > 3:
-            print(answers)
-            break
+ 
         record = {
             'local_num': counter, 
             'bank_num': parsed_name, 
-            'answer':get_answer(parsed_name)
+            'answer':get_answer(parsed_name),
+            'category':category
         }
         print(record)
         answers.append(record)
@@ -61,11 +60,21 @@ def get_answer(bank_num):
     url = 'https://ege.sdamgia.ru/problem?id=' + bank_num
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
-
-    answer_container = soup.find('div', id='sol'+ bank_num)
-    answer_span = answer_container.find('span', string=lambda text: text and 'Ответ:' in text)
-    answer = answer_span.next_sibling.text[:-1]
-    return answer
+    
+    try:
+        answer_container = soup.find('div', id='sol'+ bank_num)
+        answer_span = answer_container.find('span', string=lambda text: text and 'Ответ:' in text)
+        answer = answer_span.next_sibling.text[1:]
+        if answer.endswith('.'):
+            answer = answer[:-1]
+        return answer
+        
+    except Exception as e:
+        answer_container = soup.find('div', class_='answer')
+        answer = answer_container.find('span').text[7:]
+        if answer.endswith('.'):
+            answer = answer[:-1]
+        return answer
 
 def save_csv(answers, filename='answers.csv'):
     if not answers:
@@ -88,5 +97,6 @@ if __name__ == '__main__':
     answers = []
 
     url = input('Enter url mathege site: ')
+    category = input('Enter variant number(1-12):')
     download_images(url)
     save_csv(answers)
